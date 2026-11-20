@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Quantifying Visual Interestingness: The Wundt Curve in Digital Media</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #F3F5F9;
+  --surface: #FFFFFF;
+  --ink: #172036;
+  --muted: #56607A;
+  --line: #D6DBE6;
+  --accent: #4B3FC4;
+  --accent-soft: #E6E4FA;
+  --peak: #B4690E;
+  --display: "Bricolage Grotesque", "Helvetica Neue", Arial, sans-serif;
+  --body: "Source Serif 4", Georgia, "Times New Roman", serif;
+  color-scheme: light;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11151F;
+    --surface: #1A2030;
+    --ink: #E8EBF3;
+    --muted: #A0A8BC;
+    --line: #2D3549;
+    --accent: #9C95F7;
+    --accent-soft: #2A2752;
+    --peak: #EBB55A;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11151F;
+  --surface: #1A2030;
+  --ink: #E8EBF3;
+  --muted: #A0A8BC;
+  --line: #2D3549;
+  --accent: #9C95F7;
+  --accent-soft: #2A2752;
+  --peak: #EBB55A;
+  color-scheme: dark;
+}
+html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+*, *::before, *::after { box-sizing: inherit; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+img, canvas, svg { max-width: 100%; display: block; }
+a { color: var(--accent); text-underline-offset: 0.18em; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+
+.wrap { max-width: 1120px; margin: 0 auto; padding: 0 1.5rem; }
+header.site {
+  display: flex; justify-content: space-between; align-items: center; gap: 1rem;
+  padding: 1.25rem 0; border-bottom: 1px solid var(--line);
+  font-family: var(--display); font-size: 0.95rem;
+}
+header.site strong { font-weight: 600; }
+header.site nav { display: flex; gap: 1.25rem; flex-wrap: wrap; }
+header.site nav a { color: var(--muted); text-decoration: none; }
+header.site nav a:hover { color: var(--ink); }
+
+h1, h2, h3 { font-family: var(--display); line-height: 1.1; margin: 0; }
+h1 { font-size: clamp(2.4rem, 5.4vw, 4.1rem); font-weight: 800; letter-spacing: -0.02em; }
+h2 { font-size: clamp(1.7rem, 3vw, 2.3rem); font-weight: 600; letter-spacing: -0.01em; }
+h3 { font-size: 1.15rem; font-weight: 600; }
+p { margin: 0 0 1em; }
+
+/* Hero */
+.hero { display: grid; grid-template-columns: 1fr; gap: 2.5rem; padding: 3.5rem 0 4rem; align-items: center; }
+@media (min-width: 920px) { .hero { grid-template-columns: 1fr 1.05fr; gap: 3.5rem; } }
+.hero h1 .line2 { display: block; color: var(--muted); font-weight: 600; }
+.lede { font-size: 1.2rem; max-width: 34em; margin-top: 1.4rem; }
+.byline { color: var(--muted); font-size: 0.95rem; margin-top: 1.6rem; }
+
+.explorer { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 1.25rem; }
+#thumb { width: 100%; aspect-ratio: 16 / 9; border-radius: 10px; }
+#curve { width: 100%; height: auto; margin-top: 0.75rem; touch-action: none; cursor: pointer; }
+.slider-row { display: flex; align-items: center; gap: 0.75rem; margin-top: 0.25rem; font-family: var(--display); font-size: 0.85rem; color: var(--muted); }
+input[type="range"] { flex: 1; accent-color: var(--accent); }
+.readout { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 0.9rem; font-family: var(--display); }
+.readout div { font-size: 0.85rem; color: var(--muted); }
+.readout b { display: block; font-size: 1.45rem; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+.readout .verdict { grid-column: 1 / -1; color: var(--ink); font-size: 0.95rem; }
+
+section.block { padding: 4rem 0; border-top: 1px solid var(--line); }
+.section-intro { max-width: 40em; margin: 1rem 0 2.25rem; color: var(--muted); }
+
+/* Analyzer */
+.analyzer { display: grid; grid-template-columns: 1fr; gap: 2rem; }
+@media (min-width: 920px) { .analyzer { grid-template-columns: 1.1fr 1fr; } }
+.stage { align-self: start; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 1.25rem; }
+.drop {
+  border: 2px dashed var(--line); border-radius: 12px; min-height: 240px;
+  display: grid; place-items: center; text-align: center; padding: 1rem;
+  color: var(--muted); font-family: var(--display); position: relative;
+}
+.drop.over { border-color: var(--accent); background: var(--accent-soft); }
+.drop canvas { width: 100%; height: auto; border-radius: 8px; }
+.controls { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1rem; align-items: center; }
+button, .file-btn {
+  font-family: var(--display); font-size: 0.95rem; font-weight: 600;
+  border-radius: 999px; padding: 0.55rem 1.1rem; cursor: pointer;
+  border: 1px solid var(--line); background: var(--bg); color: var(--ink);
+}
+.file-btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+.samples { display: flex; gap: 0.6rem; margin-top: 1rem; flex-wrap: wrap; align-items: center; font-family: var(--display); font-size: 0.9rem; color: var(--muted); }
+.samples button { padding: 0.35rem 0.85rem; font-weight: 400; }
+#fileInput { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+
+.metrics { display: flex; flex-direction: column; gap: 1.4rem; }
+.metric h3 { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; }
+.metric h3 span { font-variant-numeric: tabular-nums; font-size: 1.3rem; }
+.bar { height: 8px; border-radius: 4px; background: var(--line); margin: 0.5rem 0 0.45rem; overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 4px; transition: width 0.5s ease; }
+.metric.baseline .bar i { background: var(--muted); }
+.metric p { font-size: 0.95rem; color: var(--muted); margin: 0; }
+.metric .note { color: var(--ink); }
+.empty-note { color: var(--muted); font-style: italic; }
+.disclaimer { font-size: 0.9rem; color: var(--muted); border-left: 3px solid var(--line); padding-left: 1rem; margin-top: 0.5rem; }
+
+/* Method */
+.pipeline { list-style: none; padding: 0; margin: 0; display: grid; gap: 0; counter-reset: step; }
+.pipeline li { display: grid; grid-template-columns: 3rem 1fr; gap: 1rem; padding: 1.4rem 0; border-bottom: 1px solid var(--line); counter-increment: step; }
+.pipeline li::before { content: counter(step); font-family: var(--display); font-weight: 800; font-size: 1.8rem; color: var(--accent); line-height: 1; }
+.pipeline p { margin: 0.35rem 0 0; color: var(--muted); max-width: 46em; }
+.features { display: grid; grid-template-columns: 1fr; gap: 0.25rem 2rem; margin-top: 0.6rem; }
+@media (min-width: 720px) { .features { grid-template-columns: 1fr 1fr; } }
+.features div { font-size: 0.95rem; color: var(--muted); }
+.features b { color: var(--ink); font-weight: 600; }
+
+/* Results */
+.results { display: grid; grid-template-columns: 1fr; gap: 2.5rem 3rem; }
+@media (min-width: 820px) { .results { grid-template-columns: 1fr 1fr; } }
+.result .stat { font-family: var(--display); font-weight: 800; font-size: 2.2rem; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+.result .stat small { font-size: 1rem; font-weight: 400; color: var(--muted); margin-left: 0.4rem; }
+.result p { color: var(--muted); margin-top: 0.4rem; }
+.equation { font-family: var(--body); font-style: italic; font-size: 1.15rem; margin: 2.5rem 0 0; padding: 1.25rem 1.5rem; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; overflow-x: auto; }
+
+/* Team */
+.team { display: grid; grid-template-columns: 1fr; gap: 2rem; }
+@media (min-width: 720px) { .team { grid-template-columns: 1fr 1fr; } }
+.team p { color: var(--muted); margin: 0.3rem 0 0; }
+.links { margin-top: 2.5rem; display: flex; flex-wrap: wrap; gap: 1rem; }
+.links a { font-family: var(--display); font-weight: 600; }
+.caveats { max-width: 46em; color: var(--muted); }
+footer { padding: 2rem 0 3rem; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.9rem; font-family: var(--display); }
+
+@media (prefers-reduced-motion: reduce) { .bar i { transition: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="site">
+    <strong>Quantifying Visual Interestingness</strong>
+    <nav aria-label="Sections">
+      <a href="#try">Try it</a>
+      <a href="#method">Method</a>
+      <a href="#results">Results</a>
+      <a href="#team">Team</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="title">
+      <div>
+        <h1 id="title">Too simple bores.<span class="line2">Too busy overwhelms.</span></h1>
+        <p class="lede">The Wundt Curve says interest peaks at moderate complexity. We tested it on 93 digital media thumbnails, using computer vision to measure complexity and regression to link it to real viewer engagement.</p>
+        <p class="byline">M B Thejesshwar and Aishwarya Chakrabarti, IIT Kharagpur, 2026</p>
+      </div>
+
+      <figure class="explorer" style="margin:0">
+        <canvas id="thumb" width="640" height="360" role="img" aria-label="Generated thumbnail whose visual complexity matches the slider position"></canvas>
+        <svg id="curve" viewBox="0 0 600 230" role="img" aria-label="Fitted inverted-U curve of engagement against visual complexity, peaking at 0.64 standard deviations above the mean"></svg>
+        <div class="slider-row">
+          <label for="cx">Simpler</label>
+          <input id="cx" type="range" min="-1.5" max="2.5" step="0.01" value="-1.5" aria-describedby="verdict">
+          <span aria-hidden="true">Busier</span>
+        </div>
+        <div class="readout" aria-live="polite">
+          <div>Complexity vs. average thumbnail<b id="rx">−1.50 SD</b></div>
+          <div>Predicted change in log engagement<b id="ry">0.00</b></div>
+          <p class="verdict" id="verdict"></p>
+        </div>
+      </figure>
+    </section>
+
+    <section class="block" id="try" aria-labelledby="try-title">
+      <h2 id="try-title">Measure an image yourself</h2>
+      <p class="section-intro">Upload any thumbnail or picture and your browser computes three of the visual features from our pipeline, plus the raw pixel entropy baseline that failed to predict engagement. Nothing is uploaded to a server.</p>
+
+      <div class="analyzer">
+        <div class="stage">
+          <div class="drop" id="drop">
+            <div id="dropHint">Drop an image here, or choose one below</div>
+            <canvas id="view" hidden></canvas>
+          </div>
+          <div class="controls">
+            <label class="file-btn primary" for="fileInput">Choose an image</label>
+            <input id="fileInput" type="file" accept="image/*">
+            <button id="toggleSal" type="button" aria-pressed="false" disabled>Show saliency map</button>
+          </div>
+          <div class="samples">
+            Or try a sample:
+            <button type="button" data-sample="sparse">Sparse</button>
+            <button type="button" data-sample="balanced">Balanced</button>
+            <button type="button" data-sample="cluttered">Cluttered</button>
+          </div>
+        </div>
+
+        <div class="metrics" id="metrics">
+          <p class="empty-note" id="emptyNote">Results appear here once you pick an image.</p>
+          <div class="metric" data-key="focus" hidden>
+            <h3>Saliency focus <span>–</span></h3>
+            <div class="bar"><i></i></div>
+            <p class="note"></p>
+            <p>Share of predicted attention landing on the top 10% of the image (spectral residual saliency). A significant driver of engagement in our model, p = 0.04.</p>
+          </div>
+          <div class="metric" data-key="color" hidden>
+            <h3>Color entropy <span>–</span></h3>
+            <div class="bar"><i></i></div>
+            <p class="note"></p>
+            <p>How varied the image’s hues, saturations and brightness levels are, from an HSV histogram. The strongest single driver, p = 0.01.</p>
+          </div>
+          <div class="metric" data-key="edge" hidden>
+            <h3>Edge density <span>–</span></h3>
+            <div class="bar"><i></i></div>
+            <p class="note"></p>
+            <p>Share of pixels on a strong Sobel edge, a proxy for high-frequency visual clutter.</p>
+          </div>
+          <div class="metric baseline" data-key="pixel" hidden>
+            <h3>Raw pixel entropy <span>–</span></h3>
+            <div class="bar"><i></i></div>
+            <p class="note"></p>
+            <p>The traditional baseline: grayscale intensity entropy. It did not predict engagement, p = 0.267.</p>
+          </div>
+          <p class="disclaimer">This demo shows the feature measurements only. The full pipeline also counts objects with YOLOv8 and standardizes every feature against our 93-thumbnail dataset before forming the Composite Complexity Index, so these numbers are descriptive rather than an engagement prediction.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="block" id="method" aria-labelledby="method-title">
+      <h2 id="method-title">How the complexity index was built</h2>
+      <p class="section-intro">Simple pixel statistics miss what people actually notice, so the pipeline extracts semantic, attentional and aesthetic cues before relating them to behavior.</p>
+      <ol class="pipeline">
+        <li>
+          <div>
+            <h3>Curate thumbnails and define engagement</h3>
+            <p>A controlled dataset of 93 digital media thumbnails was assembled. Engagement was standardized as a Viral Ratio, then log-transformed so a few runaway hits would not dominate the fit.</p>
+          </div>
+        </li>
+        <li>
+          <div>
+            <h3>Extract visual features</h3>
+            <div class="features">
+              <div><b>Semantic layout.</b> YOLOv8 object detection across spatial grids measures how densely recognizable subjects fill the frame.</div>
+              <div><b>Attention.</b> Spectral residual saliency simulates where the eye lands, separating a clear focal point from unstructured load.</div>
+              <div><b>Color.</b> HSV color-space distributions capture palette variety and vibrancy.</div>
+              <div><b>Texture.</b> Sobel edge maps quantify high-frequency clutter.</div>
+            </div>
+          </div>
+        </li>
+        <li>
+          <div>
+            <h3>Combine into a Composite Complexity Index</h3>
+            <p>The standardized features were combined into one index describing how complex each thumbnail looks overall.</p>
+          </div>
+        </li>
+        <li>
+          <div>
+            <h3>Test the inverted U</h3>
+            <p>An OLS regression with a quadratic term mapped the index against log engagement. The Wundt Curve predicts a positive linear coefficient and a negative quadratic one.</p>
+          </div>
+        </li>
+      </ol>
+    </section>
+
+    <section class="block" id="results" aria-labelledby="results-title">
+      <h2 id="results-title">What we found</h2>
+      <p class="section-intro">The curve held: complexity raises engagement up to a point, then starts costing attention.</p>
+      <div class="results">
+        <div class="result">
+          <div class="stat">F = 6.434<small>p = 0.00245</small></div>
+          <p>The Composite Complexity model predicted viewer engagement with high statistical significance.</p>
+        </div>
+        <div class="result">
+          <div class="stat">+0.64 SD</div>
+          <p>The turning point. Engagement rises with complexity until about 0.64 standard deviations above the average thumbnail, then declines as cognitive load takes over.</p>
+        </div>
+        <div class="result">
+          <div class="stat">p = 0.01 and 0.04</div>
+          <p>Color entropy and visual saliency were the main individual drivers of engagement.</p>
+        </div>
+        <div class="result">
+          <div class="stat">p = 0.267</div>
+          <p>Raw pixel entropy, the traditional measure, failed to predict engagement, showing that semantic and perceptual features are needed.</p>
+        </div>
+      </div>
+      <p class="equation">log(Viral Ratio) = β₀ + 1.6467 · CCI − 1.2800 · CCI² + ε &nbsp;&nbsp;⇒&nbsp;&nbsp; peak at CCI = 1.6467 / (2 × 1.2800) ≈ 0.64</p>
+    </section>
+
+    <section class="block" id="team" aria-labelledby="team-title">
+      <h2 id="team-title">Team and resources</h2>
+      <p class="section-intro">A joint project combining computer vision with econometric validation.</p>
+      <div class="team">
+        <div>
+          <h3>M B Thejesshwar</h3>
+        </div>
+        <div>
+          <h3>Aishwarya Chakrabarti</h3>
+        </div>
+      </div>
+      <div class="links">
+        <a href="https://colab.research.google.com/drive/1U4_mFeT5xhV6KPrbn_Sv_UpKUY0U5XwP?usp=sharing" target="_blank" rel="noopener">Open the analysis notebook in Google Colab</a>
+      </div>
+      <h3 style="margin-top:3rem">Limitations</h3>
+      <p class="caveats" style="margin-top:0.5rem">With 93 thumbnails, the sample is small and the turning point carries real uncertainty. The results are associations, not proof that changing complexity causes engagement, and other factors such as topic, channel size and title also shape how a video performs.</p>
+    </section>
+  </main>
+
+  <footer>Quantifying Visual Interestingness: A Computational Approach to the Wundt Curve in Digital Media</footer>
+</div>
+
+<script>
+(function () {
+  const B1 = 1.6467, B2 = -1.28, PEAK = B1 / (-2 * B2);
+  const XMIN = -1.5, XMAX = 2.5;
+  const f = x => B1 * x + B2 * x * x;
+  const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  const fmtSigned = (v, d) => (v >= 0 ? "+" : "−") + Math.abs(v).toFixed(d);
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ---------- Seeded random for stable generated thumbnails ---------- */
+  function rng(seed) {
+    return function () {
+      seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+      let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  const R = rng(20260115);
+  const SHAPES = Array.from({ length: 170 }, () => ({
+    kind: R() < 0.45 ? "rect" : (R() < 0.7 ? "circle" : "line"),
+    x: R(), y: R(), s: 0.02 + R() * 0.16, r: R() * Math.PI, h: R(), a: 0.55 + R() * 0.45, l: 35 + R() * 35
+  }));
+
+  function drawThumb(ctx, w, h, t) {
+    // t in [0,1]: 0 = sparse, 1 = cluttered
+    const baseHue = 228;
+    const spread = 20 + t * 320;
+    const g = ctx.createLinearGradient(0, 0, w, h);
+    g.addColorStop(0, `hsl(${baseHue}, ${40 + t * 30}%, ${82 - t * 25}%)`);
+    g.addColorStop(1, `hsl(${(baseHue + spread * 0.4) % 360}, ${45 + t * 30}%, ${70 - t * 20}%)`);
+    ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+
+    const n = Math.round(1 + 165 * Math.pow(t, 2.1));
+    const palette = Math.max(1, Math.round(1 + t * 9));
+    const drawSubject = () => {
+      const cx = w * 0.32, cy = h * 0.55, r = h * (0.27 - t * 0.06);
+      ctx.fillStyle = `hsl(32, 85%, 55%)`;
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "rgba(255,255,255,0.9)";
+      ctx.beginPath(); ctx.arc(cx - r * 0.3, cy - r * 0.15, r * 0.12, 0, Math.PI * 2); ctx.arc(cx + r * 0.3, cy - r * 0.15, r * 0.12, 0, Math.PI * 2); ctx.fill();
+    };
+    const buried = t > 0.72;
+    if (buried) drawSubject();
+    for (let i = 0; i < n; i++) {
+      const s = SHAPES[i];
+      const hue = (baseHue + Math.floor(s.h * palette) * (spread / palette)) % 360;
+      ctx.globalAlpha = s.a;
+      ctx.fillStyle = ctx.strokeStyle = `hsl(${hue}, ${55 + t * 35}%, ${s.l}%)`;
+      const px = s.x * w, py = s.y * h, sz = s.s * h;
+      if (s.kind === "rect") {
+        ctx.save(); ctx.translate(px, py); ctx.rotate(s.r * t); ctx.fillRect(-sz / 2, -sz / 2, sz, sz * 0.7); ctx.restore();
+      } else if (s.kind === "circle") {
+        ctx.beginPath(); ctx.arc(px, py, sz / 2, 0, Math.PI * 2); ctx.fill();
+      } else {
+        ctx.lineWidth = 2 + s.s * 20; ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px + Math.cos(s.r * 2) * sz * 2, py + Math.sin(s.r * 2) * sz * 2); ctx.stroke();
+      }
+    }
+    ctx.globalAlpha = 1;
+    if (!buried) drawSubject();
+    if (t > 0.3) {
+      ctx.fillStyle = `rgba(255,255,255,${Math.min(1, (t - 0.3) * 3)})`;
+      ctx.fillRect(w * 0.58, h * 0.36, w * 0.36, h * 0.09);
+      ctx.fillRect(w * 0.58, h * 0.5, w * 0.27, h * 0.09);
+    }
+  }
+
+  /* ---------- Hero explorer ---------- */
+  const svg = document.getElementById("curve");
+  const thumb = document.getElementById("thumb");
+  const tctx = thumb.getContext("2d");
+  const slider = document.getElementById("cx");
+  const rx = document.getElementById("rx"), ry = document.getElementById("ry"), verdict = document.getElementById("verdict");
+  const VB = { w: 600, h: 230, l: 14, r: 14, t: 30, b: 34 };
+  const YMIN = f(XMIN) - 0.3, YMAX = f(PEAK) + 1.6;
+  const sx = x => VB.l + (x - XMIN) / (XMAX - XMIN) * (VB.w - VB.l - VB.r);
+  const sy = y => VB.t + (YMAX - y) / (YMAX - YMIN) * (VB.h - VB.t - VB.b);
+  const NS = "http://www.w3.org/2000/svg";
+  const el = (tag, attrs) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); svg.appendChild(e); return e; };
+
+  let marker, guide;
+  function buildCurve() {
+    svg.innerHTML = "";
+    const ink = css("--ink"), muted = css("--muted"), line = css("--line"), accent = css("--accent"), peak = css("--peak");
+    el("line", { x1: VB.l, x2: VB.w - VB.r, y1: VB.h - VB.b, y2: VB.h - VB.b, stroke: line, "stroke-width": 1 });
+    let d = "";
+    for (let i = 0; i <= 120; i++) { const x = XMIN + (XMAX - XMIN) * i / 120; d += (i ? "L" : "M") + sx(x).toFixed(1) + "," + sy(f(x)).toFixed(1); }
+    el("path", { d, fill: "none", stroke: accent, "stroke-width": 3, "stroke-linecap": "round" });
+    el("line", { x1: sx(PEAK), x2: sx(PEAK), y1: VB.t - 2, y2: VB.h - VB.b, stroke: peak, "stroke-width": 1.5, "stroke-dasharray": "4 4" });
+    const pl = el("text", { x: sx(PEAK), y: VB.t - 8, "text-anchor": "middle", fill: peak, "font-family": "Bricolage Grotesque, sans-serif", "font-size": 13, "font-weight": 600 });
+    pl.textContent = "Peak at +0.64 SD";
+    const t1 = el("text", { x: VB.l, y: VB.h - 10, fill: muted, "font-family": "Bricolage Grotesque, sans-serif", "font-size": 12 }); t1.textContent = "Lower complexity";
+    const t2 = el("text", { x: VB.w - VB.r, y: VB.h - 10, "text-anchor": "end", fill: muted, "font-family": "Bricolage Grotesque, sans-serif", "font-size": 12 }); t2.textContent = "Higher complexity";
+    const t3 = el("text", { x: sx(0), y: VB.h - 10, "text-anchor": "middle", fill: muted, "font-family": "Bricolage Grotesque, sans-serif", "font-size": 12 }); t3.textContent = "Average";
+    guide = el("line", { y1: VB.t - 6, y2: VB.h - VB.b, stroke: muted, "stroke-width": 1, opacity: 0.5 });
+    marker = el("circle", { r: 8, fill: ink, stroke: css("--surface"), "stroke-width": 3 });
+    update(parseFloat(slider.value));
+  }
+
+  function update(x) {
+    const y = f(x);
+    marker.setAttribute("cx", sx(x)); marker.setAttribute("cy", sy(y));
+    guide.setAttribute("x1", sx(x)); guide.setAttribute("x2", sx(x));
+    rx.textContent = fmtSigned(x, 2) + " SD";
+    ry.textContent = fmtSigned(y, 2);
+    let v;
+    if (Math.abs(x - PEAK) < 0.15) v = "Near the sweet spot: enough going on to hold attention, with a clear place to look.";
+    else if (x < PEAK) v = "Below the peak: adding visual interest should help engagement.";
+    else if (x < 1.6) v = "Past the peak: each extra element now costs a little attention.";
+    else v = "Overloaded: the main subject gets lost and predicted engagement falls steeply.";
+    verdict.textContent = v;
+    tctx.clearRect(0, 0, thumb.width, thumb.height);
+    drawThumb(tctx, thumb.width, thumb.height, (x - XMIN) / (XMAX - XMIN));
+  }
+
+  slider.addEventListener("input", () => update(parseFloat(slider.value)));
+  function svgToX(evt) {
+    const r = svg.getBoundingClientRect();
+    const px = (evt.clientX - r.left) / r.width * VB.w;
+    return Math.max(XMIN, Math.min(XMAX, XMIN + (px - VB.l) / (VB.w - VB.l - VB.r) * (XMAX - XMIN)));
+  }
+  let dragging = false;
+  svg.addEventListener("pointerdown", e => { dragging = true; svg.setPointerCapture(e.pointerId); slider.value = svgToX(e); update(parseFloat(slider.value)); });
+  svg.addEventListener("pointermove", e => { if (dragging) { slider.value = svgToX(e); update(parseFloat(slider.value)); } });
+  svg.addEventListener("pointerup", () => { dragging = false; });
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", buildCurve);
+
+  buildCurve();
+  // One orchestrated moment: glide to the peak on load
+  if (reduceMotion) { slider.value = PEAK; update(PEAK); }
+  else {
+    const start = performance.now(), dur = 1800;
+    const step = now => {
+      const p = Math.min(1, (now - start) / dur), e = 1 - Math.pow(1 - p, 3);
+      const x = XMIN + (PEAK - XMIN) * e;
+      slider.value = x; update(x);
+      if (p < 1) requestAnimationFrame(step);
+    };
+    setTimeout(() => requestAnimationFrame(step), 350);
+  }
+
+  /* ---------- Image analysis ---------- */
+  function fft(re, im, inv) {
+    const n = re.length;
+    for (let i = 1, j = 0; i < n; i++) {
+      let bit = n >> 1;
+      for (; j & bit; bit >>= 1) j ^= bit;
+      j ^= bit;
+      if (i < j) { [re[i], re[j]] = [re[j], re[i]]; [im[i], im[j]] = [im[j], im[i]]; }
+    }
+    for (let len = 2; len <= n; len <<= 1) {
+      const ang = 2 * Math.PI / len * (inv ? 1 : -1), wr = Math.cos(ang), wi = Math.sin(ang), half = len >> 1;
+      for (let i = 0; i < n; i += len) {
+        let cr = 1, ci = 0;
+        for (let k = 0; k < half; k++) {
+          const a = i + k, b = a + half;
+          const vr = re[b] * cr - im[b] * ci, vi = re[b] * ci + im[b] * cr;
+          re[b] = re[a] - vr; im[b] = im[a] - vi; re[a] += vr; im[a] += vi;
+          const nr = cr * wr - ci * wi; ci = cr * wi + ci * wr; cr = nr;
+        }
+      }
+    }
+    if (inv) for (let i = 0; i < n; i++) { re[i] /= n; im[i] /= n; }
+  }
+  function fft2(re, im, N, inv) {
+    const r = new Float64Array(N), c = new Float64Array(N);
+    for (let y = 0; y < N; y++) {
+      for (let x = 0; x < N; x++) { r[x] = re[y * N + x]; c[x] = im[y * N + x]; }
+      fft(r, c, inv);
+      for (let x = 0; x < N; x++) { re[y * N + x] = r[x]; im[y * N + x] = c[x]; }
+    }
+    for (let x = 0; x < N; x++) {
+      for (let y = 0; y < N; y++) { r[y] = re[y * N + x]; c[y] = im[y * N + x]; }
+      fft(r, c, inv);
+      for (let y = 0; y < N; y++) { re[y * N + x] = r[y]; im[y * N + x] = c[y]; }
+    }
+  }
+  function blur(src, N, sigma) {
+    const rad = Math.ceil(sigma * 3), k = [];
+    let sum = 0;
+    for (let i = -rad; i <= rad; i++) { const v = Math.exp(-i * i / (2 * sigma * sigma)); k.push(v); sum += v; }
+    for (let i = 0; i < k.length; i++) k[i] /= sum;
+    const tmp = new Float64Array(N * N), out = new Float64Array(N * N);
+    const cl = v => v < 0 ? 0 : v >= N ? N - 1 : v;
+    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) { let s = 0; for (let i = -rad; i <= rad; i++) s += src[y * N + cl(x + i)] * k[i + rad]; tmp[y * N + x] = s; }
+    for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) { let s = 0; for (let i = -rad; i <= rad; i++) s += tmp[cl(y + i) * N + x] * k[i + rad]; out[y * N + x] = s; }
+    return out;
+  }
+  function spectralResidual(img) {
+    const N = 64, c = document.createElement("canvas"); c.width = c.height = N;
+    const x = c.getContext("2d", { willReadFrequently: true }); x.drawImage(img, 0, 0, N, N);
+    const d = x.getImageData(0, 0, N, N).data;
+    const re = new Float64Array(N * N), im = new Float64Array(N * N);
+    for (let i = 0; i < N * N; i++) re[i] = (0.299 * d[i * 4] + 0.587 * d[i * 4 + 1] + 0.114 * d[i * 4 + 2]) / 255;
+    fft2(re, im, N, false);
+    const L = new Float64Array(N * N), P = new Float64Array(N * N);
+    for (let i = 0; i < N * N; i++) { L[i] = Math.log(Math.hypot(re[i], im[i]) + 1e-8); P[i] = Math.atan2(im[i], re[i]); }
+    for (let y = 0; y < N; y++) for (let xx = 0; xx < N; xx++) {
+      let s = 0;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) s += L[((y + dy + N) % N) * N + (xx + dx + N) % N];
+      const m = Math.exp(L[y * N + xx] - s / 9);
+      re[y * N + xx] = m * Math.cos(P[y * N + xx]); im[y * N + xx] = m * Math.sin(P[y * N + xx]);
+    }
+    fft2(re, im, N, true);
+    let S = new Float64Array(N * N);
+    for (let i = 0; i < N * N; i++) S[i] = re[i] * re[i] + im[i] * im[i];
+    S = blur(S, N, 2.5);
+    let mx = 0, total = 0; for (const v of S) { if (v > mx) mx = v; total += v; }
+    const sorted = Array.from(S).sort((a, b) => b - a);
+    let top = 0; for (let i = 0; i < Math.round(N * N * 0.1); i++) top += sorted[i];
+    for (let i = 0; i < S.length; i++) S[i] = mx ? S[i] / mx : 0;
+    return { map: S, N, focus: total ? top / total : 0 };
+  }
+  function analyze(img) {
+    const maxSide = 256, scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+    const w = Math.max(8, Math.round(img.width * scale)), h = Math.max(8, Math.round(img.height * scale));
+    const c = document.createElement("canvas"); c.width = w; c.height = h;
+    const x = c.getContext("2d", { willReadFrequently: true }); x.drawImage(img, 0, 0, w, h);
+    const d = x.getImageData(0, 0, w, h).data, n = w * h;
+    const gray = new Float64Array(n), grayHist = new Float64Array(256), hsvHist = new Float64Array(12 * 3 * 3);
+    for (let i = 0; i < n; i++) {
+      const r = d[i * 4] / 255, g = d[i * 4 + 1] / 255, b = d[i * 4 + 2] / 255;
+      const gv = 0.299 * r + 0.587 * g + 0.114 * b; gray[i] = gv; grayHist[Math.min(255, Math.round(gv * 255))]++;
+      const mx = Math.max(r, g, b), mn = Math.min(r, g, b), df = mx - mn;
+      let hue = 0;
+      if (df) { if (mx === r) hue = ((g - b) / df) % 6; else if (mx === g) hue = (b - r) / df + 2; else hue = (r - g) / df + 4; hue = (hue * 60 + 360) % 360; }
+      const s = mx ? df / mx : 0;
+      const hb = Math.min(11, Math.floor(hue / 30)), sb = Math.min(2, Math.floor(s * 3)), vb = Math.min(2, Math.floor(mx * 3));
+      hsvHist[(hb * 3 + sb) * 3 + vb]++;
+    }
+    const entropy = (hist, total) => { let e = 0; for (const v of hist) if (v) { const p = v / total; e -= p * Math.log2(p); } return e; };
+    const color = entropy(hsvHist, n) / Math.log2(hsvHist.length);
+    const pixel = entropy(grayHist, n) / 8;
+    let edges = 0, cnt = 0;
+    for (let yy = 1; yy < h - 1; yy++) for (let xx = 1; xx < w - 1; xx++) {
+      const p = (dx, dy) => gray[(yy + dy) * w + xx + dx];
+      const gx = -p(-1, -1) - 2 * p(-1, 0) - p(-1, 1) + p(1, -1) + 2 * p(1, 0) + p(1, 1);
+      const gy = -p(-1, -1) - 2 * p(0, -1) - p(1, -1) + p(-1, 1) + 2 * p(0, 1) + p(1, 1);
+      if (Math.hypot(gx, gy) / 4 > 0.1) edges++;
+      cnt++;
+    }
+    const sal = spectralResidual(img);
+    return { color, pixel, edge: cnt ? edges / cnt : 0, focus: sal.focus, sal };
+  }
+
+  const view = document.getElementById("view"), vctx = view.getContext("2d");
+  const drop = document.getElementById("drop"), dropHint = document.getElementById("dropHint");
+  const toggle = document.getElementById("toggleSal"), fileInput = document.getElementById("fileInput");
+  let current = null, showSal = false;
+
+  function render() {
+    if (!current) return;
+    const { img, res } = current;
+    const maxW = 900, scale = Math.min(1, maxW / img.width);
+    view.width = Math.round(img.width * scale); view.height = Math.round(img.height * scale);
+    vctx.globalAlpha = 1;
+    vctx.drawImage(img, 0, 0, view.width, view.height);
+    if (showSal) {
+      const { map, N } = res.sal, c = document.createElement("canvas"); c.width = c.height = N;
+      const cx = c.getContext("2d"), id = cx.createImageData(N, N);
+      for (let i = 0; i < N * N; i++) { const v = map[i]; id.data[i * 4] = 255; id.data[i * 4 + 1] = Math.round(120 + 110 * v); id.data[i * 4 + 2] = 40; id.data[i * 4 + 3] = Math.round(235 * Math.pow(v, 0.8)); }
+      cx.putImageData(id, 0, 0);
+      vctx.fillStyle = "rgba(10,14,30,0.55)"; vctx.fillRect(0, 0, view.width, view.height);
+      vctx.imageSmoothingEnabled = true; vctx.drawImage(c, 0, 0, view.width, view.height);
+    }
+  }
+
+  const NOTES = {
+    focus: v => v > 0.4 ? "Clear focal point: attention concentrates on one region." : v > 0.25 ? "Moderate focus: a few regions compete for attention." : "Scattered attention: no single region stands out.",
+    color: v => v > 0.65 ? "Very varied palette." : v > 0.4 ? "Moderately varied palette." : "Restrained, narrow palette.",
+    edge: v => v > 0.25 ? "Heavy texture and clutter." : v > 0.1 ? "Moderate detail." : "Smooth, uncluttered surfaces.",
+    pixel: v => v > 0.85 ? "Wide spread of brightness levels." : v > 0.6 ? "Moderate spread of brightness levels." : "Narrow range of brightness levels."
+  };
+  function showMetrics(res) {
+    document.getElementById("emptyNote").hidden = true;
+    const vals = { focus: res.focus, color: res.color, edge: res.edge, pixel: res.pixel };
+    const scaleFor = { focus: v => (v - 0.1) / 0.6, color: v => v, edge: v => v / 0.4, pixel: v => v };
+    for (const key in vals) {
+      const box = document.querySelector(`.metric[data-key="${key}"]`); box.hidden = false;
+      box.querySelector("h3 span").textContent = vals[key].toFixed(2);
+      box.querySelector(".bar i").style.width = Math.max(2, Math.min(100, scaleFor[key](vals[key]) * 100)) + "%";
+      box.querySelector(".note").textContent = NOTES[key](vals[key]);
+    }
+  }
+  function load(img) {
+    const res = analyze(img);
+    current = { img, res };
+    dropHint.hidden = true; view.hidden = false; toggle.disabled = false;
+    render(); showMetrics(res);
+  }
+  function loadFile(file) {
+    if (!file || !file.type.startsWith("image/")) { dropHint.hidden = false; view.hidden = true; dropHint.textContent = "That file isn’t an image. Choose a JPG, PNG or WebP file."; return; }
+    const url = URL.createObjectURL(file), img = new Image();
+    img.onload = () => { load(img); URL.revokeObjectURL(url); };
+    img.onerror = () => { dropHint.hidden = false; view.hidden = true; dropHint.textContent = "This image couldn’t be read. Try a JPG, PNG or WebP file."; };
+    img.src = url;
+  }
+  fileInput.addEventListener("change", () => loadFile(fileInput.files[0]));
+  ["dragenter", "dragover"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("over"); }));
+  ["dragleave", "drop"].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("over"); }));
+  drop.addEventListener("drop", e => loadFile(e.dataTransfer.files[0]));
+  toggle.addEventListener("click", () => { showSal = !showSal; toggle.setAttribute("aria-pressed", String(showSal)); toggle.textContent = showSal ? "Hide saliency map" : "Show saliency map"; render(); });
+
+  const SAMPLE_T = { sparse: 0.03, balanced: 0.5, cluttered: 1 };
+  document.querySelectorAll("[data-sample]").forEach(b => b.addEventListener("click", () => {
+    const c = document.createElement("canvas"); c.width = 640; c.height = 360;
+    drawThumb(c.getContext("2d"), 640, 360, SAMPLE_T[b.dataset.sample]);
+    const img = new Image(); img.onload = () => load(img); img.src = c.toDataURL("image/png");
+  }));
+})();
+</script>
+</body>
+</html>
